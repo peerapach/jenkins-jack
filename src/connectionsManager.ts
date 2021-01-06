@@ -4,6 +4,7 @@ import { QuickpickSet } from './quickpickSet';
 import { ext } from './extensionVariables';
 import { ConnectionsTreeItem } from './connectionsTree';
 import { JenkinsConnection } from './jenkinsConnection';
+import { encode } from 'js-base64';
 
 export class ConnectionsManager implements QuickpickSet {
     private _host: JenkinsService;
@@ -114,7 +115,7 @@ export class ConnectionsManager implements QuickpickSet {
             "name": conn.name,
             "uri": conn.uri,
             "username": conn.username,
-            "password": conn.password,
+            "password": "Basic "+ encode(conn.username + ":" + conn.password),
             "folderFilter": conn.folderFilter,
             "active": true
         });
@@ -174,7 +175,7 @@ export class ConnectionsManager implements QuickpickSet {
                 c.name = editedConnection.name;
                 c.uri = editedConnection.uri;
                 c.username = editedConnection.username;
-                c.password = editedConnection.password;
+                c.password = "Basic "+ encode(editedConnection.username + ":" + editedConnection.password);
                 c.folderFilter = editedConnection.folderFilter;
             }
         });

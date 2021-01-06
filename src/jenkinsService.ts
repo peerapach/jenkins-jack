@@ -24,6 +24,8 @@ export class JenkinsService {
 
     private _jenkinsUri: string;
 
+    private useBasicAuth: string;
+
     private readonly _cantConnectMessage = `Could not connect to the remote Jenkins "${this.connection.name}".`;
     private _disposed = false;
 
@@ -50,7 +52,7 @@ export class JenkinsService {
     };
 
     public constructor(public readonly connection: JenkinsConnection) {
-
+        this.useBasicAuth = '';
         let protocol = 'http';
         let host = this.connection.uri;
 
@@ -60,19 +62,22 @@ export class JenkinsService {
             host = match[2];
         }
 
-        this._jenkinsUri = (null === this.connection.username || null === this.connection.password) ?
-                            `${protocol}://${host}` :
-                            `${protocol}://${encodeURIComponent(this.connection.username)}:${encodeURIComponent(this.connection.password)}@${host}`;
-
-        console.log(`Using the following URI for Jenkins client: ${this._jenkinsUri}`);
-
         this.updateSettings();
+    
+        this.useBasicAuth = this.connection.password;
+        this._jenkinsUri = `${protocol}://${host}`;
+
+        console.log(`Using the BasicAuth following URI for Jenkins client: ${this._jenkinsUri}`);
 
         this.client = jenkins({
             baseUrl: this._jenkinsUri,
             crumbIssuer: this.connection.crumbIssuer,
-            promisify: true
+            promisify: true,
+            headers: {
+                'Authorization': this.useBasicAuth,
+            },
         });
+    
 
         // Will error if no connection can be made to the remote host
         this.client.info().catch((err: any) => {
@@ -120,12 +125,20 @@ export class JenkinsService {
         return new Promise<any>(async (resolve) => {
             try {
                 let url = `${this._jenkinsUri}/${endpoint}`;
-                let requestPromise = request.get(url);
+                let options = {
+                        headers: {
+                            Authorization: this.useBasicAuth,
+                        }
+                    }; 
+
+                let requestPromise = request.get(url, options);
+        
                 token?.onCancellationRequested(() => {
                     requestPromise.abort();
                     resolve(undefined);
                 });
                 resolve(await requestPromise);
+            
             } catch (err) {
                 console.log(err);
                 resolve(undefined);
@@ -288,7 +301,13 @@ export class JenkinsService {
                 let sw = timer();
                 let rootUrl = this.fromUrlFormat(job.url);
                 let url = `${rootUrl}/api/json?tree=builds[${this._buildProps}]`;
-                let requestPromise = request.get(url);
+                let options = {
+                        headers: {
+                            Authorization: this.useBasicAuth,
+                        }
+                    };
+
+                let requestPromise = request.get(url,options);
                 token?.onCancellationRequested(() => {
                     requestPromise.abort();
                     resolve([]);
@@ -328,7 +347,13 @@ export class JenkinsService {
             progress.report({ message: `Pulling replay script from ${job.fullName} #${build.number}` });
             try {
                 let url = `${this._jenkinsUri}/${new Url(job.url).pathname}/${build.number}/replay`;
-                let r = await request.get(url);
+                let options = {
+                        headers: {
+                            Authorization: this.useBasicAuth,
+                        }
+                    };
+
+                let r = await request.get(url,options);
 
                 const root = htmlParser.load(r);
                 let source  = root('textarea')[0].childNodes[0].data?.toString();
@@ -375,7 +400,14 @@ export class JenkinsService {
                 rootUrl = rootUrl === undefined ? this._jenkinsUri : rootUrl;
                 rootUrl = this.fromUrlFormat(rootUrl);
                 let url = `${rootUrl}/api/json?tree=jobs[${this._jobProps},jobs[${this._jobProps},jobs[${this._jobProps}]]]`;
-                let requestPromise = request.get(url);
+
+                let options = {
+                        headers: {
+                            Authorization: this.useBasicAuth,
+                        }
+                    };
+
+                let requestPromise = request.get(url, options);
                 token?.onCancellationRequested(() => {
                     requestPromise.abort();
                     resolve([]);
