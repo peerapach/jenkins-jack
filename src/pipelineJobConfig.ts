@@ -23,7 +23,7 @@ export class PipelineConfig {
             this.name = parsed.name;
             this.params = null;
             this.folder = undefined;
-            this.save();
+            if (overwrite) this.save();
             return;
         }
 
@@ -54,7 +54,6 @@ export class PipelineConfig {
     }
 
     get buildableName(): string {
-        //let json = readjson(GLOBAL_CONFIG);
         let relativePathFromCurrentToWorkspace: string;
         let folderPath = this.currentFolderPath;
         let configPath: string;
@@ -71,8 +70,8 @@ export class PipelineConfig {
                 json = readjson(configPath);
             } else {
                 for (let index in relativePathFromCurrentToWorkspace.split(path.sep)) {
-                    this.currentFolderPath = path.join(this.currentFolderPath, relativePathFromCurrentToWorkspace.split(path.sep)[index]);
-                    configPath = path.join(path.normalize(this.currentFolderPath), GLOBAL_CONFIG)
+                    folderPath = path.normalize(path.join(folderPath, relativePathFromCurrentToWorkspace.split(path.sep)[index]));
+                    configPath = path.join(folderPath, GLOBAL_CONFIG)
                     if (fs.existsSync(configPath)) {
                         json = readjson(configPath);
                         break;
@@ -83,8 +82,8 @@ export class PipelineConfig {
         }
         
         if (undefined === this.folder || '' === this.folder) {
-            if (json.baseFolder) return path.join(json.baseFolder, this.name);
-            else return `${this.name}`;
+            this.folder = this.currentFolderPath.replace(folderPath, "");
+            this.folder = this.folder.replace(/^\//,'');
         }
         if (json.baseFolder) return path.join(json.baseFolder, this.folder, this.name);
         else return path.join(this.folder, this.name);
