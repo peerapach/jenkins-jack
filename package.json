@@ -713,11 +713,13 @@
     "@types/url-parse": "^1.4.3",
     "cheerio": "^1.0.0-rc.3",
     "jenkins": "^0.28.1",
+    "js-base64": "^3.6.0",
     "open": "^6.2.0",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.7",
     "url-parse": "^1.4.7",
     "vsce": "^1.81.1",
-    "xml2js": "0.4.3"
+    "xml2js": "0.4.3",
+    "yaml": "^1.10.0"
   }
 }

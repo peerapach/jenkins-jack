@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ext } from './extensionVariables';
 import * as path from 'path';
+import * as YAML from 'yaml'
 
 function _sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -120,6 +121,24 @@ export function readjson(path: string): any {
         throw err;
     }
     return json;
+}
+
+/**
+ * Utility for parsing a yaml file and returning
+ * its contents.
+ * @param path The path to the yaml file.
+ * @returns The parsed yaml.
+ */
+export function readyaml(path: string): any {
+    let raw: any = fs.readFileSync(path, 'utf8');
+    let yaml: any;
+    try {
+        yaml = YAML.parse(raw);
+    } catch (err) {
+        err.message = `Could not parse parameter YAML from ${path}`;
+        throw err;
+    }
+    return yaml;
 }
 
 /**

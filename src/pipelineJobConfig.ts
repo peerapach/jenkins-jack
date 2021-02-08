@@ -2,9 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { readjson, writejson } from './utils';
+import { readyaml, readjson, writejson } from './utils';
 
-const GLOBAL_CONFIG = '.jenkins-jack.config.json'
+const GLOBAL_CONFIG = '.jenkins-jack.config.yaml'
 export class PipelineConfig {
     public name: string;
     public params: any;
@@ -57,38 +57,53 @@ export class PipelineConfig {
         let relativePathFromCurrentToWorkspace: string;
         let folderPath = this.currentFolderPath;
         let configPath: string;
-        let json: any;
+        let validJackConfig: boolean | false = false;
+        let yaml: any | undefined;
 
         console.log('currentFolderPath: ', this.currentFolderPath);
-
         if (vscode.workspace.workspaceFolders?.length === 1) {
             // Get relative path from current directory to workspace directory
             relativePathFromCurrentToWorkspace = path.relative(this.currentFolderPath,vscode.workspace.workspaceFolders[0].uri.path)
             configPath = path.join(folderPath, GLOBAL_CONFIG)
 
             if (fs.existsSync(configPath)) {
-                json = readjson(configPath);
-            } else {
+                yaml = readyaml(configPath);
+                validJackConfig = this.validConfigure(yaml);
+            } 
+            if (!validJackConfig) {
                 for (let index in relativePathFromCurrentToWorkspace.split(path.sep)) {
                     folderPath = path.normalize(path.join(folderPath, relativePathFromCurrentToWorkspace.split(path.sep)[index]));
                     configPath = path.join(folderPath, GLOBAL_CONFIG)
                     if (fs.existsSync(configPath)) {
-                        json = readjson(configPath);
-                        break;
+                        yaml = readyaml(configPath);
+                        validJackConfig = this.validConfigure(yaml);
+                        if (validJackConfig) break;
                     }
                 }
             }
-            console.log("Found - Global Config: ", configPath);
         }
         
         if (undefined === this.folder || '' === this.folder) {
             this.folder = this.currentFolderPath.replace(folderPath, "");
             this.folder = this.folder.replace(/^\//,'');
         }
-        if (json.baseFolder) return path.join(json.baseFolder, this.folder, this.name);
-        else return path.join(this.folder, this.name);
+
+        if (validJackConfig) {
+            return path.join(yaml.job.prefix, this.folder, this.name);
+        }
+        return path.join(this.folder, this.name);
+        
     }
 
+    validConfigure(yaml: any): boolean {
+        if (undefined !== yaml) {
+            //hardcode check yaml job.prefix
+            if ('string' === typeof(yaml.job.prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Saves the current pipeline configuration to disk.
