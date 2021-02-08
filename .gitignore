@@ -3,3 +3,5 @@ out
 dist
 *.vsix
 .vscode*
+.devcontainer
+.DS_Store
