@@ -157,6 +157,21 @@ export function writejson(path: string, json: any) {
 }
 
 /**
+ * Writes the given yaml to disk.
+ * @param path The the file path (file included) to write to.
+ * @param json The json to write out.
+ */
+export function writeyaml(path: string, yaml: any) {
+    try {
+        let yamlString = YAML.stringify(yaml);
+        fs.writeFileSync(path, yamlString, 'utf8');
+    } catch (err) {
+        err.message = `Could not write parameter JSON to ${path}`;
+        throw err;
+    }
+}
+
+/**
  * TODO: HACK
  * Returns some nasty hard-coded Jenkins Pipeline
  * XML as a Pipeline job config template.

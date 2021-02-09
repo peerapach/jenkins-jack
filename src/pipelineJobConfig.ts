@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { readyaml, readjson, writejson } from './utils';
+import { readyaml, readjson, writejson, writeyaml } from './utils';
 
 const GLOBAL_CONFIG = '.jenkins-jack.config.yaml'
 export class PipelineConfig {
@@ -27,11 +27,19 @@ export class PipelineConfig {
             return;
         }
 
-        let json = readjson(this.path);
-        this.name = json.name;
-        this.params = json.params;
-        this.interactiveInputOverride = json.interactiveInputOverride;
-        this.folder = json.folder;
+        if (this.path.split('.').pop() === "json") {
+            let json = readjson(this.path);
+            this.name = json.name;
+            this.params = json.params;
+            this.interactiveInputOverride = json.interactiveInputOverride;
+            this.folder = json.folder;
+        } else if (this.path.split('.').pop() === "yaml") {
+            let yaml = readyaml(this.path);
+            this.name = yaml.name;
+            this.params = yaml.params;
+            this.interactiveInputOverride = yaml.interactiveInputOverride;
+            this.folder = yaml.folder;
+        }
     }
 
     toJSON(): any {
@@ -109,7 +117,8 @@ export class PipelineConfig {
      * Saves the current pipeline configuration to disk.
      */
     public save() {
-        writejson(this.path, this);
+        if (this.path.split('.').pop() === "json") writejson(this.path, this);
+        else writeyaml(this.path, this);
     }
 
     /**
@@ -132,6 +141,8 @@ export class PipelineConfig {
     public static pathFromScript(scriptPath: string): string {
         let parsed = path.parse(scriptPath);
         let configFileName = `.${parsed.name}.config.json`;
-        return path.join(parsed.dir, configFileName);
+        let configFileNameYaml = `.${parsed.name}.config.yaml`;
+        if (fs.existsSync(path.join(parsed.dir, configFileName))) return path.join(parsed.dir, configFileName);
+        return path.join(parsed.dir, configFileNameYaml);
     }
 }
