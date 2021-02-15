@@ -65,7 +65,7 @@ export class PipelineConfig {
         let relativePathFromCurrentToWorkspace: string;
         let folderPath = this.currentFolderPath;
         let configPath: string;
-        let validJackConfig: boolean | false = false;
+        let validateJackConfig: boolean | false = false;
         let yaml: any | undefined;
 
         console.log('currentFolderPath: ', this.currentFolderPath);
@@ -76,16 +76,17 @@ export class PipelineConfig {
 
             if (fs.existsSync(configPath)) {
                 yaml = readyaml(configPath);
-                validJackConfig = this.validConfigure(yaml);
+                validateJackConfig = this.validateConfigure(yaml);
             } 
-            if (!validJackConfig) {
+            if (!validateJackConfig) {
                 for (let index in relativePathFromCurrentToWorkspace.split(path.sep)) {
                     folderPath = path.normalize(path.join(folderPath, relativePathFromCurrentToWorkspace.split(path.sep)[index]));
                     configPath = path.join(folderPath, GLOBAL_CONFIG)
                     if (fs.existsSync(configPath)) {
                         yaml = readyaml(configPath);
-                        validJackConfig = this.validConfigure(yaml);
-                        if (validJackConfig) break;
+                        validateJackConfig = this.validateConfigure(yaml);
+                        if (validateJackConfig) break;
+                        else yaml = undefined;
                     }
                 }
             }
@@ -96,15 +97,15 @@ export class PipelineConfig {
             this.folder = this.folder.replace(/^\//,'');
         }
 
-        if (validJackConfig) {
+        if (validateJackConfig) {
             return path.join(yaml.job.prefix, this.folder, this.name);
         }
         return path.join(this.folder, this.name);
         
     }
 
-    validConfigure(yaml: any): boolean {
-        if (undefined !== yaml) {
+    validateConfigure(yaml: any): boolean {
+        if (yaml) {
             //hardcode check yaml job.prefix
             if ('string' === typeof(yaml.job.prefix)) {
                 return true;
